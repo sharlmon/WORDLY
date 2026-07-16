@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wordly Dictionary SPA</title>
+    <!-- here we link the css file to the index.html -->
+    <link rel="stylesheet" href="./css/style.css">
+    <!-- here we link the JavaScript file to this html document -->
+    <script src="./js/index.js" defer></script>
+</head>
+<body>
+    <header>
+        <h1>Wordly</h1>
+        <p>Wordly is a single-page dictionary application.</p>
+    </header>
+
+    <main>
+        <!-- search-section -->
+        <section class="search-section">
+            <form id="search-form">
+                <input type="text" id="word-input" placeholder="Search for a word..." required aria-label="Search for a word" autocomplete="off">
+                <button type="submit">Search</button>
+            </form>
+            <div id="status-message" class="hidden" role="alert"></div>
+        </section>
+
+        <!-- result-section -->
+        <section id="results-section" class="hidden">
+            <div class="word-header">
+                <h2 id="word-title"></h2>
+                <button id="favorite-btn" aria-label="Save to favorites">🤍 Save</button>
+            </div>
+            <p id="word-phonetic"></p>
+            <button id="audio-btn" class="hidden">🔊 Play Pronunciation</button>
+            
+            <div id="meanings-container"></div>
+            
+            <!-- Source Link Container -->
+            <div id="source-container" class="hidden">
+                <p><strong>Source: </strong> <a id="source-link" href="#" target="_blank"></a></p>
+            </div>
+        </section>
+
+        <!-- Favorites-section -->
+        <section class="favorites-section">
+            <h2>Favorites</h2>
+            <ul id="favorites-list">
+            </ul>
+        </section>
+    </main>
+</body>
+</html>
