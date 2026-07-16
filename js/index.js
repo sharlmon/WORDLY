@@ -1,92 +1,127 @@
 // =========================================
-// 1. SELECT HTML ELEMENTS
+// 1. DOM ELEMENT SELECTIONS
 // =========================================
-const form = document.getElementById('search-form');
-const input = document.getElementById('word-input');
-const statusMessage = document.getElementById('status-message');
-const resultsSection = document.getElementById('results-section');
-const wordTitle = document.getElementById('word-title');
-const wordPhonetic = document.getElementById('word-phonetic');
-const audioBtn = document.getElementById('audio-btn');
-const meaningsContainer = document.getElementById('meanings-container');
-const favBtn = document.getElementById('favorite-btn');
-const favList = document.getElementById('favorites-list');
-const sourceContainer = document.getElementById('source-container');
-const sourceLink = document.getElementById('source-link');
+// Clean, single-target selectors mapping directly to your HTML
+const form = document.getElementById('dict-search-form');
+const input = document.getElementById('search-query');
+const submitBtn = document.getElementById('submit-search-btn');
+const statusMessage = document.getElementById('feedback-alert');
+const resultsSection = document.getElementById('definition-card');
+const wordTitle = document.getElementById('display-word');
+const wordPhonetic = document.getElementById('pronunciation-text');
+const audioBtn = document.getElementById('play-audio-btn');
+const meaningsContainer = document.getElementById('dictionary-entries');
+const favBtn = document.getElementById('save-word-btn');
+const favList = document.getElementById('saved-items-ul');
+const sourceContainer = document.getElementById('source-link-wrapper');
+const sourceLink = document.getElementById('wiki-source-url');
 
-// Global variables to keep track of the current word and its audio
+// Global variables for state management
 let currentAudio = null; 
 let currentWord = ""; 
 
 // =========================================
-// 2. INITIALIZE APP
+// 2. INITIALIZATION & EVENT LISTENERS
 // =========================================
-// When the page loads, automatically display any saved favorites
+// Load saved favorites as soon as the page loads
 document.addEventListener('DOMContentLoaded', displayFavorites);
 
-// Listen for the user submitting the search form
+// Form submission event
 form.addEventListener('submit', handleSearch);
 
-// Listen for the user clicking the Audio button
+// Audio playback event
 audioBtn.addEventListener('click', () => {
     if (currentAudio) currentAudio.play();
 });
 
+// Favorites save/remove toggle event
+favBtn.addEventListener('click', () => {
+    const favorites = getFavorites();
+    if (favorites.includes(currentWord)) {
+        removeFavorite(currentWord);
+    } else {
+        saveFavorite(currentWord);
+    }
+});
+
 // =========================================
-// 3. CORE SEARCH LOGIC
+// 3. CORE SEARCH & API LOGIC
 // =========================================
 async function handleSearch(event) {
-    event.preventDefault(); // Stops the page from refreshing
-    const word = input.value.trim(); // Removes extra spaces
+    event.preventDefault(); 
+    
+    // Read input, trim spaces, and normalize to lowercase
+    const word = input.value.trim().toLowerCase(); 
 
-    // Validate input
+    // Validate that the input is not empty
     if (!word) {
         displayError("Please enter a word.");
         return;
     }
 
-    // Show loading state and hide old results
+    // Clear old results, show loading, and disable the search button
     resultsSection.classList.add('hidden');
     statusMessage.textContent = "Loading...";
-    statusMessage.style.color = "#1565c0"; // Make loading text blue
+    statusMessage.style.color = "#1565c0"; 
     statusMessage.classList.remove('hidden');
+    submitBtn.disabled = true; 
 
     try {
         const data = await fetchWord(word);
-        displayWord(data[0]); // The API returns an array, so we grab the first item
+        
+        // Validate that the API returned a usable array
+        if (Array.isArray(data) && data.length > 0) {
+            displayWord(data[0]); 
+        } else {
+            throw new Error("Invalid data received from the dictionary.");
+        }
     } catch (error) {
         displayError(error.message);
+    } finally {
+        // ALWAYS re-enable the submit button, even if the request fails
+        submitBtn.disabled = false; 
     }
 }
 
 async function fetchWord(word) {
-    // Encode the word so spaces or weird characters don't break the URL
+    // Encode the word to safely handle special characters
     const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`;
-    const response = await fetch(url);
     
-    // Check if the API successfully found the word
-    if (!response.ok) {
-        throw new Error("We could not find that word. Check the spelling and try again.");
+    try {
+        const response = await fetch(url);
+        
+        // Check for specific error statuses
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error("We could not find that word. Check the spelling and try again.");
+            } else {
+                throw new Error("Server error. Please try again later.");
+            }
+        }
+        
+        return await response.json(); 
+        
+    } catch (error) {
+        // Handle physical network disconnects
+        if (error.message === "Failed to fetch") {
+            throw new Error("Network failure. Please check your internet connection.");
+        }
+        throw error; 
     }
-    
-    return await response.json();
 }
 
 // =========================================
-// 4. DISPLAY DATA LOGIC
+// 4. DISPLAY LOGIC
 // =========================================
 function displayWord(data) {
-    // Hide the loading message
     statusMessage.classList.add('hidden'); 
-    
-    // Update global current word for the favorites system
     currentWord = data.word; 
 
-    // Inject word and phonetic text
+    // Render word and phonetic spelling
     wordTitle.textContent = data.word;
     wordPhonetic.textContent = data.phonetic || "No pronunciation available";
 
-    // Handle Audio: Find the first valid audio link in the array
+    // Handle Audio: Find the first valid audio URL
     audioBtn.classList.add('hidden');
     currentAudio = null;
     if (data.phonetics) {
@@ -97,27 +132,24 @@ function displayWord(data) {
         }
     }
 
-    // Clear old definitions
+    // Clear previous definitions
     meaningsContainer.innerHTML = '';
 
     // Loop through meanings (noun, verb, etc.)
     if (data.meanings) {
         data.meanings.forEach(meaning => {
-            // Create a wrapper for this part of speech
             const div = document.createElement('div');
             div.innerHTML = `<h3 class="part-of-speech">${meaning.partOfSpeech}</h3>`;
 
-            // Create a list for definitions
             const ul = document.createElement('ul');
-            
-            // Track all synonyms for this specific meaning
             let allSynonyms = meaning.synonyms ? [...meaning.synonyms] : [];
 
+            // Loop through specific definitions
             meaning.definitions.forEach(def => {
                 const li = document.createElement('li');
                 li.textContent = def.definition;
                 
-                // Check if an example sentence exists
+                // Add example sentence if it exists
                 if (def.example) {
                     const exampleText = document.createElement('em');
                     exampleText.className = 'example-text';
@@ -125,7 +157,7 @@ function displayWord(data) {
                     li.appendChild(exampleText);
                 }
 
-                // Check for deep synonyms at the definition level
+                // Gather definition-level synonyms
                 if (def.synonyms && def.synonyms.length > 0) {
                     allSynonyms = allSynonyms.concat(def.synonyms);
                 }
@@ -134,9 +166,8 @@ function displayWord(data) {
             });
             div.appendChild(ul);
 
-            // Display synonyms if we found any
+            // Display combined unique synonyms
             if (allSynonyms.length > 0) {
-                // Remove duplicates using a Set
                 const uniqueSynonyms = [...new Set(allSynonyms)];
                 const syn = document.createElement('p');
                 syn.innerHTML = `<strong>Synonyms:</strong> ${uniqueSynonyms.join(', ')}`;
@@ -147,7 +178,7 @@ function displayWord(data) {
         });
     }
 
-    // Handle Source Link
+    // Handle Source URL
     if (data.sourceUrls && data.sourceUrls.length > 0) {
         sourceLink.href = data.sourceUrls[0];
         sourceLink.textContent = data.sourceUrls[0];
@@ -156,35 +187,22 @@ function displayWord(data) {
         sourceContainer.classList.add('hidden');
     }
 
-    // Check if this word is already in our favorites and update the button color
     updateFavoriteButtonUI();
-    
-    // Finally, show the results section
     resultsSection.classList.remove('hidden');
 }
 
 function displayError(message) {
     statusMessage.textContent = message;
-    statusMessage.style.color = "#d32f2f"; // Make error text red
+    statusMessage.style.color = "#d32f2f"; 
     statusMessage.classList.remove('hidden');
     resultsSection.classList.add('hidden');
 }
 
 // =========================================
-// 5. FAVORITES & LOCAL STORAGE LOGIC
+// 5. LOCAL STORAGE (FAVORITES) LOGIC
 // =========================================
-favBtn.addEventListener('click', () => {
-    const favorites = getFavorites();
-    if (favorites.includes(currentWord)) {
-        removeFavorite(currentWord);
-    } else {
-        saveFavorite(currentWord);
-    }
-});
-
 function getFavorites() {
-    // Grab the string from local storage and convert it back to an array
-    const favs = localStorage.getItem('wordly_favorites');
+    const favs = localStorage.getItem('wordly_bookmarks');
     return favs ? JSON.parse(favs) : []; 
 }
 
@@ -192,8 +210,7 @@ function saveFavorite(word) {
     const favorites = getFavorites();
     if (!favorites.includes(word)) {
         favorites.push(word);
-        // Convert the array back to a string to save it
-        localStorage.setItem('wordly_favorites', JSON.stringify(favorites)); 
+        localStorage.setItem('wordly_bookmarks', JSON.stringify(favorites)); 
     }
     updateFavoriteButtonUI();
     displayFavorites();
@@ -201,11 +218,9 @@ function saveFavorite(word) {
 
 function removeFavorite(word) {
     let favorites = getFavorites();
-    // Keep every word EXCEPT the one we want to remove
     favorites = favorites.filter(fav => fav !== word);
-    localStorage.setItem('wordly_favorites', JSON.stringify(favorites)); 
+    localStorage.setItem('wordly_bookmarks', JSON.stringify(favorites)); 
     
-    // If the word we just removed is the one currently on the screen, update the button
     if (word === currentWord) {
         updateFavoriteButtonUI();
     }
@@ -215,43 +230,39 @@ function removeFavorite(word) {
 function updateFavoriteButtonUI() {
     const favorites = getFavorites();
     if (favorites.includes(currentWord)) {
-        favBtn.textContent = "❤️ Saved";
-        favBtn.classList.add('saved'); // Adds the red background from CSS
+        favBtn.textContent = "⭐ Bookmarked";
+        favBtn.classList.add('saved'); 
     } else {
-        favBtn.textContent = "🤍 Save";
+        favBtn.textContent = "☆ Bookmark";
         favBtn.classList.remove('saved'); 
     }
 }
 
 function displayFavorites() {
-    favList.innerHTML = ''; // Clear the current list
+    favList.innerHTML = ''; 
     const favorites = getFavorites();
 
-    // Empty state check
     if (favorites.length === 0) {
         favList.innerHTML = '<li>No favorite words saved yet.</li>'; 
         return;
     }
 
-    // Build the list of favorites dynamically
     favorites.forEach(word => {
         const li = document.createElement('li');
         li.className = 'favorite-item';
         
-        // We use innerHTML here for simplicity to add the text and a button at the same time
         li.innerHTML = `
             <span class="fav-word">${word}</span>
             <button class="remove-btn">Remove</button>
         `;
         
-        // If they click the word, search for it again
+        // Search the word again when clicked
         li.querySelector('.fav-word').addEventListener('click', () => {
             input.value = word;
-            // Programmatically trigger a form submission
             handleSearch(new Event('submit'));
         });
 
-        // If they click remove, delete it
+        // Remove the word from favorites
         li.querySelector('.remove-btn').addEventListener('click', () => {
             removeFavorite(word);
         });
