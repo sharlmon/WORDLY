@@ -41,7 +41,7 @@ Open index.html in your preferred web browser, or use a local development enviro
 Enter a word in the search field and click the "Look Up" button to test the application.
 
 API Information
-This project utilizes the Free Dictionary API.
+This project uses the Free Dictionary API.
 
 Endpoint Format: https://api.dictionaryapi.dev/api/v2/entries/en/{word}
 
@@ -62,12 +62,12 @@ Click any word in your Favorites panel to instantly search it again, or click "R
 
 Screenshots
 Live Demo & Repository
-Live Demo: [Insert Deployed URL Here]
+Live Demo: https://github.com/sharlmon/WORDLY
 
-GitHub Repository: [Insert GitHub Repo URL Here]
+GitHub Repository: https://github.com/sharlmon/WORDLY
 
 Limitations
-The Free Dictionary API does not guarantee uniform data for every entry. Extremely obscure words may lack audio pronunciations, example sentences, or synonyms.
+some words do lack pronunciation
 
 The current version of this application only supports English words.
 
