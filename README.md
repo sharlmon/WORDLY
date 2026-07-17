@@ -65,6 +65,7 @@ Live Demo & Repository
 Live Demo: https://github.com/sharlmon/WORDLY
 
 GitHub Repository: https://github.com/sharlmon/WORDLY
+Github deployment link :https://sharlmon.github.io/WORDLY/
 
 Limitations
 some words do lack pronunciation
