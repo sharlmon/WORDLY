@@ -62,7 +62,6 @@ Click any word in your Favorites panel to instantly search it again, or click "R
 
 Screenshots
 Live Demo & Repository
-Live Demo: https://github.com/sharlmon/WORDLY
 
 GitHub Repository: https://github.com/sharlmon/WORDLY
 Github deployment link :https://sharlmon.github.io/WORDLY/
